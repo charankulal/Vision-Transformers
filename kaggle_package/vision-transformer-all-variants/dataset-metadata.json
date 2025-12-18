@@ -1,0 +1,23 @@
+{
+  "title": "Vision Transformer (ViT) - All Variants Implementation",
+  "id": "yourusername/vision-transformer-all-variants",
+  "licenses": [
+    {
+      "name": "Apache-2.0"
+    }
+  ],
+  "keywords": [
+    "vision transformer",
+    "vit",
+    "deep learning",
+    "computer vision",
+    "tensorflow",
+    "image classification",
+    "transfer learning",
+    "attention mechanism",
+    "transformer",
+    "feature extraction"
+  ],
+  "description": "Complete implementation of Vision Transformer (ViT) models including Small, Base, Large, and Huge variants with multiple patch sizes (S/16, S/32, B/16, B/32, L/16, L/32, H/14, H/16). Ready for feature extraction, transfer learning, and fine-tuning.",
+  "subtitle": "Production-ready ViT models (S/B/L/H) for TensorFlow/Keras"
+}
