@@ -8,19 +8,20 @@ A production-ready TensorFlow/Keras implementation of Vision Transformer (ViT) m
 
 > **📄 Model Source:** Implementation based on ["An Image is Worth 16x16 Words"](https://arxiv.org/abs/2010.11929) (Dosovitskiy et al., 2021). Clean-room TensorFlow/Keras implementation following the original architecture specifications.
 
-## 🚀 Quick Start on Kaggle
+## 🚀 Quick Start
 
-### Step 1: Add this dataset to your Kaggle notebook
+### Step 1: Add Dataset to Kaggle Notebook
 
-### Step 2: Import the package (Copy-paste this code)
+Add this dataset as input to your Kaggle notebook.
+
+### Step 2: Import the Package
 
 ```python
 import sys
 import tensorflow as tf
 
 # Add the ViT package to Python path
-# Update this path if your dataset has a different name
-sys.path.append('/kaggle/input/vision-transformer-base-models/tensorflow2/default/4/vision-transformer-all-variants/src')
+sys.path.append('/kaggle/input/vision-transformer-all-variants/src')
 
 # Import ViT models
 from vit_all_variants import (
@@ -34,23 +35,24 @@ from vit_all_variants import (
 print("✓ Vision Transformer package imported successfully!")
 ```
 
-### Step 3: Create and use a model
+### Step 3: List Available Models
 
 ```python
-# Create ViT-B/16 model
-model = create_vit_b16(image_size=224, include_top=False)
-
-# Extract features from images
-images = tf.random.normal((4, 224, 224, 3))
-features = model(images, training=False)
-print(f"Output shape: {features.shape}")  # (4, 197, 768)
+# See all 8 variants with specifications
+list_variants()
 ```
 
-### 📝 Note on Import Path
-
-The exact path depends on how the dataset is organized on Kaggle:
-- **Standard path**: `/kaggle/input/vision-transformer-base-models/tensorflow2/default/4/vision-transformer-all-variants/src`
-- **Check your path**: Look at your Kaggle notebook's "Input" section to find the exact path
+**Output:**
+```
+VIT_S16: 16x16 patches, 12 layers, 384 embed, 6 heads → 21.7M params
+VIT_S32: 32x32 patches, 12 layers, 384 embed, 6 heads → 22.5M params
+VIT_B16: 16x16 patches, 12 layers, 768 embed, 12 heads → 85.8M params
+VIT_B32: 32x32 patches, 12 layers, 768 embed, 12 heads → 87.5M params
+VIT_L16: 16x16 patches, 24 layers, 1024 embed, 16 heads → 303.3M params
+VIT_L32: 32x32 patches, 24 layers, 1024 embed, 16 heads → 305.5M params
+VIT_H14: 14x14 patches, 32 layers, 1280 embed, 16 heads → 630.8M params
+VIT_H16: 16x16 patches, 32 layers, 1280 embed, 16 heads → 630.9M params
+```
 
 ## 📦 Available Models
 
@@ -65,38 +67,71 @@ The exact path depends on how the dataset is organized on Kaggle:
 | **ViT-H/14** | 14×14 | ~632M | State-of-the-art |
 | **ViT-H/16** | 16×16 | ~632M | Maximum capacity |
 
-## 💡 Common Use Cases on Kaggle
+## 💡 Usage Examples
 
-### 1. Feature Extraction for Competition
+### Example 1: Feature Extraction
+
+Extract features from images for downstream tasks.
 
 ```python
-import sys
-sys.path.append('/kaggle/input/vision-transformer-base-models/tensorflow2/default/4/vision-transformer-all-variants/src')
-from vit_all_variants import create_vit_b16
-import tensorflow as tf
-
-# Load your competition data
-train_images = ...  # Your training images
-
-# Create feature extractor
+# Create ViT-B/16 for feature extraction
 model = create_vit_b16(image_size=224, include_top=False)
+print(f"Parameters: {model.count_params():,}")  # 85,798,656
 
 # Extract features
-features = model.extract_features(train_images)
-# Use features for your competition model
+images = tf.random.normal((4, 224, 224, 3))
+
+# All tokens (includes class token + patch tokens)
+all_features = model(images, training=False)
+print(f"All tokens: {all_features.shape}")  # (4, 197, 768)
+
+# Class token only (recommended for classification/similarity)
+cls_features = model.extract_features(images, training=False)
+print(f"Class token: {cls_features.shape}")  # (4, 768)
 ```
 
-### 2. Transfer Learning
+**Use Cases:**
+- Image similarity search
+- Transfer learning
+- Clustering
+- Downstream classification
+
+### Example 2: Image Classification
+
+Train a model with classification head.
 
 ```python
-import sys
-sys.path.append('/kaggle/input/vision-transformer-base-models/tensorflow2/default/4/vision-transformer-all-variants/src')
-from vit_all_variants import create_vit_b16
-import tensorflow as tf
+# Create classifier
+model = create_vit_b32(
+    image_size=224,
+    include_top=True,
+    num_classes=10,
+    dropout=0.1
+)
 
-# Create base model
+# Compile
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(1e-4),
+    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    metrics=['accuracy']
+)
+
+# Train
+model.fit(train_dataset, validation_data=val_dataset, epochs=10)
+
+# Predict
+predictions = model(test_images, training=False)
+probabilities = tf.nn.softmax(predictions)
+```
+
+### Example 3: Transfer Learning (Frozen Backbone)
+
+Best approach for limited data or quick training.
+
+```python
+# Create and freeze base model
 base_model = create_vit_b16(image_size=224, include_top=False)
-base_model.trainable = False  # Freeze for faster training
+base_model.trainable = False
 
 # Add custom head
 inputs = tf.keras.Input(shape=(224, 224, 3))
@@ -106,158 +141,133 @@ x = tf.keras.layers.Dense(256, activation='relu')(x)
 x = tf.keras.layers.Dropout(0.3)(x)
 outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)
 
+# Create and compile model
 model = tf.keras.Model(inputs, outputs)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
 
-# Train on competition data
-model.fit(train_dataset, validation_data=val_dataset, epochs=10)
+# Train (only custom head is trainable)
+model.fit(train_dataset, epochs=10)
 ```
 
-### 3. Image Similarity Search
+**Result:** Only ~200K trainable parameters vs 85.8M total
+
+### Example 4: Compare Model Variants
+
+Choose the right model for your use case.
 
 ```python
-import sys
-sys.path.append('/kaggle/input/vision-transformer-base-models/tensorflow2/default/4/vision-transformer-all-variants/src')
-from vit_all_variants import create_vit_b32
-import tensorflow as tf
-import numpy as np
+variants = {
+    'ViT-S/32': create_vit_s32,
+    'ViT-B/16': create_vit_b16,
+}
 
-# Create feature extractor (B/32 for speed)
-model = create_vit_b32(image_size=224, include_top=False)
-
-# Extract embeddings
-query_features = model.extract_features(query_images)
-database_features = model.extract_features(database_images)
-
-# Compute cosine similarity
-query_norm = tf.nn.l2_normalize(query_features, axis=1)
-database_norm = tf.nn.l2_normalize(database_features, axis=1)
-similarity = tf.matmul(query_norm, database_norm, transpose_b=True)
-
-# Find most similar images
-top_k_indices = tf.argsort(similarity, direction='DESCENDING')[:, :10]
+for name, create_fn in variants.items():
+    model = create_fn(image_size=224, include_top=False)
+    output = model(tf.random.normal((1, 224, 224, 3)))
+    print(f"{name}: {model.count_params():,} params → {output.shape}")
 ```
 
-### 4. Fine-tuning on Custom Dataset
+**Output:**
+```
+ViT-S/32: 22,493,952 params → (1, 50, 384)
+ViT-B/16: 85,798,656 params → (1, 197, 768)
+```
+
+### Example 5: Save and Load Models
 
 ```python
-import sys
-sys.path.append('/kaggle/input/vision-transformer-base-models/tensorflow2/default/4/vision-transformer-all-variants/src')
-from vit_all_variants import create_vit_s16
-import tensorflow as tf
+# Save weights
+model = create_vit_s16(image_size=224, include_top=False)
+model.save_weights('vit_s16_weights.weights.h5')
 
-# Use smaller model for faster experimentation
-model = create_vit_s16(
+# Load weights
+new_model = create_vit_s16(
     image_size=224,
-    include_top=True,
-    num_classes=10,  # Your dataset classes
-    dropout=0.1
+    include_top=False,
+    weights='vit_s16_weights.weights.h5'
 )
 
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(1e-4),
-    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-    metrics=['accuracy']
-)
-
-# Train
-history = model.fit(
-    train_dataset,
-    validation_data=val_dataset,
-    epochs=20,
-    callbacks=[
-        tf.keras.callbacks.ReduceLROnPlateau(patience=3),
-        tf.keras.callbacks.EarlyStopping(patience=5)
-    ]
-)
+# Verify they're identical
+test_image = tf.random.normal((1, 224, 224, 3))
+diff = tf.reduce_max(tf.abs(model(test_image) - new_model(test_image)))
+print(f"Difference: {diff.numpy()}")  # 0.0
 ```
 
-## 🎯 Choosing the Right Model
+## 🎯 Model Selection Guide
 
-**For Kaggle Competitions:**
-- **Quick Experiments**: Use ViT-S/32 or ViT-B/32 (faster iterations)
-- **Feature Extraction**: Use ViT-B/16 (best balance)
-- **Maximum Accuracy**: Use ViT-L/16 or ViT-H/14 (if GPU time allows)
+**By Use Case:**
+- **Kaggle/General Purpose**: ViT-B/16 (best balance)
+- **Quick Experiments**: ViT-S/32 or ViT-B/32 (faster)
+- **High Accuracy**: ViT-L/16 or ViT-H/14
+- **Mobile/Edge**: ViT-S/32 (smallest, fastest)
 
-**GPU Memory Considerations:**
-- **Kaggle Free Tier (16GB)**: ViT-B/16 with batch size 16-32
-- **Kaggle GPU P100**: ViT-L/16 with batch size 8-16
-- **Multiple GPUs**: ViT-H/14 with larger batches
+**By GPU Memory:**
+- **8GB GPU**: ViT-S variants
+- **16GB GPU**: ViT-B/16 (batch 16-32)
+- **24GB GPU**: ViT-L/16 (batch 8-16)
+- **40GB+ GPU**: ViT-H variants (batch 4-8)
 
-## 📊 Typical Performance
+**By Speed vs Accuracy:**
+```
+Speed:    S/32 > S/16 > B/32 > B/16 > L/32 > L/16 > H/16 > H/14
+Accuracy: S/32 < B/32 < S/16 < B/16 < L/32 < L/16 < H/16 < H/14
+```
 
-Expected Top-1 accuracy on ImageNet-1K (with pre-training):
-- ViT-S/32: ~75%
-- ViT-B/32: ~75-77%
-- ViT-B/16: ~80-82%
-- ViT-L/16: ~83-85%
-- ViT-H/14: ~86-88%
+## 📊 Performance Reference
+
+**ImageNet-1K Accuracy** (with pre-training):
+- ViT-S/32: ~75% | ViT-S/16: ~78%
+- ViT-B/32: 75-77% | ViT-B/16: 80-82%
+- ViT-L/32: 77-79% | ViT-L/16: 83-85%
+- ViT-H/14: 86-88% | ViT-H/16: 85-87%
 
 ## 🔧 Advanced Features
 
-### Compare All Variants
-
 ```python
-from vit_all_variants import compare_variants, list_variants
-
-# See detailed comparison
+# Compare all variants side-by-side
 compare_variants(image_size=224)
 
-# List all specifications
+# List all variant specifications
 list_variants()
+
+# Use different image sizes (must be divisible by patch size)
+model_224 = create_vit_b16(image_size=224)
+model_384 = create_vit_b16(image_size=384)
+model_512 = create_vit_b16(image_size=512)
 ```
 
-### Custom Configuration
-
-```python
-from vit_all_variants import VisionTransformer
-
-model = VisionTransformer(
-    image_size=384,
-    patch_size=16,
-    num_layers=24,
-    embed_dim=1024,
-    num_heads=16,
-    mlp_dim=4096,
-    dropout=0.1,
-    include_top=True,
-    num_classes=1000
-)
-```
-
-## 📁 Package Structure
+## 📁 Repository Structure
 
 ```
 vision-transformer-all-variants/
 ├── src/
 │   ├── __init__.py
-│   └── vit_all_variants.py      # Main implementation
+│   └── vit_all_variants.py         # Main implementation
 ├── examples/
-│   └── example_usage.py          # Usage examples
-├── requirements.txt              # Dependencies
-├── dataset-metadata.json         # Kaggle metadata
-└── README.md                     # This file
+│   ├── example_usage.py             # Usage examples
+│   └── kaggle_quickstart.ipynb      # Interactive notebook
+├── MODEL_INSTANCES.md               # Detailed model guide
+├── MODEL_CARD.md                    # Full documentation
+└── README.md                        # This file
 ```
 
-## 🔑 Key Features
+## 📚 Documentation
 
-- ✅ All 8 standard ViT variants (S/B/L/H with 14/16/32 patches)
-- ✅ Easy feature extraction for transfer learning
-- ✅ Flexible image sizes (any size divisible by patch size)
-- ✅ Classification head support (optional)
-- ✅ Save/load model weights
-- ✅ Production-ready, well-documented code
-- ✅ Optimized for Kaggle workflows
+- **Quick Reference**: See [MODEL_INSTANCES.md](MODEL_INSTANCES.md)
+- **Original Paper**: ["An Image is Worth 16x16 Words"](https://arxiv.org/abs/2010.11929)
+- **Example Notebook**: [kaggle_quickstart.ipynb](examples/kaggle_quickstart.ipynb)
+- **Full Model Card**: [MODEL_CARD.md](MODEL_CARD.md)
 
-## 📚 Additional Resources
+## 💡 Tips & Best Practices
 
-- **Original Paper**: [An Image is Worth 16x16 Words](https://arxiv.org/abs/2010.11929)
-- **Example Notebook**: See `examples/example_usage.py`
-- **Full Documentation**: Check the source code docstrings
+1. **Start with ViT-B/16** - Best all-around model
+2. **Use `extract_features()`** - Get class token for classification/similarity
+3. **Freeze backbone first** - Train only custom head, then fine-tune if needed
+4. **Smaller models for small datasets** - Avoid overfitting with ViT-S variants
+5. **Higher resolution for details** - Use 384×384 or 512×512 for fine-grained tasks
+6. **Save checkpoints** - Use `ModelCheckpoint` callback during training
 
 ## 🎓 Citation
-
-If you use this implementation in your work:
 
 ```bibtex
 @article{dosovitskiy2020image,
@@ -268,22 +278,8 @@ If you use this implementation in your work:
 }
 ```
 
-## 💬 Tips for Kaggle Users
-
-1. **Start Small**: Test with ViT-S/32 first, then scale up
-2. **Feature Extraction**: Use `extract_features()` for quick embeddings
-3. **Memory Management**: Use smaller batch sizes for larger models
-4. **Mixed Precision**: Enable for faster training on Kaggle GPUs
-5. **Save Checkpoints**: Use callbacks to save best models
-
-## 🚀 Getting Started
-
-1. Add this dataset to your Kaggle notebook
-2. Copy the import code from Quick Start section
-3. Start building your model!
-
 ---
 
-**Happy Kaggling!** 🏆
+**Ready to use?** Check out [kaggle_quickstart.ipynb](examples/kaggle_quickstart.ipynb) for a complete walkthrough!
 
-For issues or questions, please use the Kaggle discussion tab.
+For questions or issues, please use the Kaggle discussion tab.
