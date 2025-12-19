@@ -18,6 +18,6 @@
     "transformer",
     "feature extraction"
   ],
-  "description": "Complete implementation of Vision Transformer (ViT) models including Small, Base, Large, and Huge variants with multiple patch sizes (S/16, S/32, B/16, B/32, L/16, L/32, H/14, H/16). Ready for feature extraction, transfer learning, and fine-tuning.",
+  "description": "Complete implementation of Vision Transformer (ViT) models including Small, Base, Large, and Huge variants with multiple patch sizes (S/16, S/32, B/16, B/32, L/16, L/32, H/14, H/16). Ready for feature extraction, transfer learning, and fine-tuning. Based on 'An Image is Worth 16x16 Words' (Dosovitskiy et al., 2021).",
   "subtitle": "Production-ready ViT models (S/B/L/H) for TensorFlow/Keras"
 }

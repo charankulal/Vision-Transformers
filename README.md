@@ -2,6 +2,8 @@
 
 A comprehensive TensorFlow/Keras implementation of Vision Transformer models including Small, Base, Large, and Huge variants with different patch sizes.
 
+> **📄 Model Source:** Implementation based on ["An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"](https://arxiv.org/abs/2010.11929) (Dosovitskiy et al., ICLR 2021). This is a clean-room TensorFlow implementation following the original paper's architecture specifications.
+
 ## 🎯 Overview
 
 This repository provides a clean, modular implementation of Vision Transformers (ViT) that supports all standard variants from the original paper "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale".

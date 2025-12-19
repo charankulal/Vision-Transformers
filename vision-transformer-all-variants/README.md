@@ -6,6 +6,8 @@
 
 A production-ready TensorFlow/Keras implementation of Vision Transformer (ViT) models with all standard variants.
 
+> **📄 Model Source:** Implementation based on ["An Image is Worth 16x16 Words"](https://arxiv.org/abs/2010.11929) (Dosovitskiy et al., 2021). Clean-room TensorFlow/Keras implementation following the original architecture specifications.
+
 ## 🚀 Quick Start on Kaggle
 
 ### Method 1: Direct Import (Recommended)
