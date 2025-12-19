@@ -32,6 +32,12 @@ class PatchEmbedding(layers.Layer):
             name="patch_projection"
         )
 
+    def build(self, input_shape):
+        """Build the patch embedding layer."""
+        # Build the Conv2D projection layer
+        self.projection.build(input_shape)
+        super().build(input_shape)
+
     def call(self, x):
         x = self.projection(x)
         batch_size = tf.shape(x)[0]
@@ -65,6 +71,12 @@ class MultiHeadSelfAttention(layers.Layer):
             name="mha"
         )
 
+    def build(self, input_shape):
+        """Build the attention layer."""
+        # Build the MultiHeadAttention layer
+        self.attention.build(input_shape)
+        super().build(input_shape)
+
     def call(self, x, training=False):
         return self.attention(x, x, training=training)
 
@@ -89,6 +101,14 @@ class MLP(layers.Layer):
         self.dense1 = layers.Dense(hidden_dim, activation="gelu", name="dense1")
         self.dense2 = layers.Dense(embed_dim, name="dense2")
         self.dropout = layers.Dropout(dropout)
+
+    def build(self, input_shape):
+        """Build the MLP layers."""
+        # Build dense layers
+        self.dense1.build(input_shape)
+        hidden_shape = input_shape[:-1] + (self.hidden_dim,)
+        self.dense2.build(hidden_shape)
+        super().build(input_shape)
 
     def call(self, x, training=False):
         x = self.dense1(x)
@@ -120,6 +140,18 @@ class TransformerBlock(layers.Layer):
         self.mlp = MLP(mlp_dim, embed_dim, dropout)
         self.layernorm1 = layers.LayerNormalization(epsilon=1e-6, name="ln1")
         self.layernorm2 = layers.LayerNormalization(epsilon=1e-6, name="ln2")
+
+    def build(self, input_shape):
+        """Build the transformer block layers."""
+        # Build layer normalization layers
+        self.layernorm1.build(input_shape)
+        self.layernorm2.build(input_shape)
+
+        # Build attention and MLP
+        self.attention.build(input_shape)
+        self.mlp.build(input_shape)
+
+        super().build(input_shape)
 
     def call(self, x, training=False):
         # Attention block with residual connection
