@@ -73,8 +73,8 @@ class MultiHeadSelfAttention(layers.Layer):
 
     def build(self, input_shape):
         """Build the attention layer."""
-        # Build the MultiHeadAttention layer
-        self.attention.build(input_shape)
+        # Build the MultiHeadAttention layer (requires query_shape and value_shape)
+        self.attention.build(query_shape=input_shape, value_shape=input_shape)
         super().build(input_shape)
 
     def call(self, x, training=False):
