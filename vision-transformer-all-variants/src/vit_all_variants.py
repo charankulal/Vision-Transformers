@@ -221,6 +221,26 @@ class VisionTransformer(keras.Model):
         if include_top:
             self.head = layers.Dense(num_classes, name="classification_head")
 
+    def build(self, input_shape):
+        """Build the model layers."""
+        # Build patch embedding layer
+        self.patch_embedding.build(input_shape)
+
+        # Build transformer blocks
+        token_shape = (input_shape[0], self.num_patches + 1, self.embed_dim)
+        for block in self.transformer_blocks:
+            block.build(token_shape)
+
+        # Build final layer norm
+        self.layernorm.build(token_shape)
+
+        # Build classification head if included
+        if self.include_top:
+            self.head.build((input_shape[0], self.embed_dim))
+
+        # Mark the model as built
+        super().build(input_shape)
+
     def call(self, x, training=False):
         batch_size = tf.shape(x)[0]
 
